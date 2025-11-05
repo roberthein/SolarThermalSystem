@@ -8,7 +8,7 @@ class ThermalStorageTank {
     let waterDensity: Double = 1.0
     let specificHeat: Double = 4184.0
     let heatLossCoefficient: Double = 4.0
-    let mixingCoefficient: Double = 0.05
+    let mixingCoefficient: Double = 0.04
     
     private(set) var layerTemperatures: [Double]
     private var massPerLayer: Double
@@ -85,7 +85,7 @@ class ThermalStorageTank {
     /// Simulates natural convection where hot water rises through buoyancy.
     /// Uses controlled heat transfer to maintain realistic temperature gradients.
     private func applyStratification(dt: TimeInterval) {
-        for _ in 0..<4 {
+        for _ in 0..<5 {
             for i in 0..<(numberOfLayers - 1) {
                 let lowerTemp = layerTemperatures[i]
                 let upperTemp = layerTemperatures[i + 1]

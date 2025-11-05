@@ -1,7 +1,9 @@
 import SwiftUI
 import Charts
 
-struct ContentView: View {
+/// Main dashboard view for the solar thermal system simulation.
+/// Displays system visualization, control panel, and temperature charts.
+struct DashboardView: View {
     @StateObject private var viewModel = SimulationViewModel()
     @State private var showChart = false
     @State private var isFloatingPanelPresented = true
@@ -50,6 +52,8 @@ struct ContentView: View {
                 }
                 
                 Spacer()
+                
+                sunIndicator
             }
             .padding(AppStyling.Spacing.md)
             
@@ -433,10 +437,48 @@ struct ContentView: View {
             }
         }
     }
+    
+    private var sunIndicator: some View {
+        HStack(spacing: AppStyling.Spacing.sm) {
+            ZStack {
+                if viewModel.solarIrradiance > 0 {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    AppStyling.Solar.sunGlow.opacity(viewModel.solarIrradiance / 2000.0),
+                                    .clear
+                                ],
+                                center: .center,
+                                startRadius: 10,
+                                endRadius: 30
+                            )
+                        )
+                        .frame(width: 60, height: 60)
+                }
+                
+                Image(systemName: viewModel.solarIrradiance > 0 ? "sun.max.fill" : "moon.stars.fill")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(viewModel.solarIrradiance > 0 ? AppStyling.Solar.sun : AppStyling.Accent.primary)
+            }
+            .frame(width: 60, height: 60)
+            
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(String(format: "%.0f", viewModel.solarIrradiance))
+                    .font(AppStyling.Typography.value)
+                    .foregroundColor(AppStyling.Text.primary)
+                    .monospacedDigit()
+                
+                Text("W/m²")
+                    .font(AppStyling.Typography.valueCaption)
+                    .foregroundColor(AppStyling.Text.secondary)
+            }
+        }
+    }
 }
 
 #Preview {
-    ContentView()
+    DashboardView()
         .preferredColorScheme(.dark)
 }
 

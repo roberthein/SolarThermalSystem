@@ -4,7 +4,7 @@ import SwiftUI
 struct SolarThermalSystemApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            DashboardView()
                 .preferredColorScheme(.dark)
         }
     }
