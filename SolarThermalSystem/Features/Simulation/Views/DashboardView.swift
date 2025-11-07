@@ -5,8 +5,14 @@ import Charts
 /// Displays system visualization, control panel, and temperature charts.
 struct DashboardView: View {
     @StateObject private var viewModel = SimulationViewModel()
-    @State private var showChart = false
+    @State private var currentPage: ViewPage = .schematic
+    @State private var scrollPosition: ViewPage? = .schematic
     @State private var isFloatingPanelPresented = true
+    
+    enum ViewPage: Int, Hashable {
+        case schematic = 0
+        case chart = 1
+    }
 
     var body: some View {
         ZStack {
@@ -15,55 +21,86 @@ struct DashboardView: View {
 
             mainVisualization
         }
-        .overlay(alignment: .bottomLeading) {
-            Color.clear.frame(width: 1, height: 1)
-                .floatingPanel(minimumCornerRadius: 50, padding: 25, background: AnyShapeStyle(.background), isPresented: $isFloatingPanelPresented, isPersistent: true) {
-                    controlPanel
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .presentationDetents([.height(140), .fraction(0.6)])
-                        .presentationBackgroundInteraction(.enabled)
-                }
+        .floatingPanel(minimumCornerRadius: 50, padding: 25, background: AnyShapeStyle(AppStyling.Background.tertiary), isPresented: $isFloatingPanelPresented, isPersistent: true) {
+            controlPanel
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .presentationDetents([.height(140), .fraction(0.6)])
+                .presentationBackgroundInteraction(.enabled)
         }
         .preferredColorScheme(.dark)
         .ignoresSafeArea(.keyboard)
     }
     
     private var mainVisualization: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button(action: { showChart = false }) {
-                    Text("Schematic")
-                        .font(AppStyling.Typography.headline)
-                        .foregroundColor(showChart ? AppStyling.Text.secondary : AppStyling.Text.primary)
-                        .padding(.horizontal, AppStyling.Spacing.md)
-                        .padding(.vertical, AppStyling.Spacing.sm)
-                        .background(showChart ? Color.clear : AppStyling.Background.card)
-                        .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.sm, style: .continuous))
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                HStack {
+                    Button(action: {
+                        withAnimation(.smooth(duration: 0.3)) {
+                            currentPage = .schematic
+                        }
+                    }) {
+                        Text("Schematic")
+                            .font(AppStyling.Typography.headline)
+                            .foregroundColor(currentPage == .chart ? AppStyling.Text.secondary : AppStyling.Text.primary)
+                            .padding(.horizontal, AppStyling.Spacing.md)
+                            .padding(.vertical, AppStyling.Spacing.sm)
+                            .background(currentPage == .chart ? Color.clear : AppStyling.Background.card)
+                            .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.sm, style: .continuous))
+                    }
+                    
+                    Button(action: {
+                        withAnimation(.smooth(duration: 0.3)) {
+                            currentPage = .chart
+                        }
+                    }) {
+                        Text("Chart")
+                            .font(AppStyling.Typography.headline)
+                            .foregroundColor(currentPage == .chart ? AppStyling.Text.primary : AppStyling.Text.secondary)
+                            .padding(.horizontal, AppStyling.Spacing.md)
+                            .padding(.vertical, AppStyling.Spacing.sm)
+                            .background(currentPage == .chart ? AppStyling.Background.card : Color.clear)
+                            .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.sm, style: .continuous))
+                    }
+                    
+                    Spacer()
+                    
+                    sunIndicator
                 }
+                .padding(AppStyling.Spacing.md)
                 
-                Button(action: { showChart = true }) {
-                    Text("Chart")
-                        .font(AppStyling.Typography.headline)
-                        .foregroundColor(showChart ? AppStyling.Text.primary : AppStyling.Text.secondary)
-                        .padding(.horizontal, AppStyling.Spacing.md)
-                        .padding(.vertical, AppStyling.Spacing.sm)
-                        .background(showChart ? AppStyling.Background.card : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.sm, style: .continuous))
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 0) {
+                        SchematicView(viewModel: viewModel)
+                            .frame(width: geometry.size.width)
+                            .id(ViewPage.schematic)
+                            .containerRelativeFrame(.horizontal)
+                        
+                        TemperatureChartView(viewModel: viewModel)
+                            .frame(width: geometry.size.width)
+                            .id(ViewPage.chart)
+                            .containerRelativeFrame(.horizontal)
+                            .padding(.bottom, AppStyling.Spacing.xxxl)
+                    }
+                    .scrollTargetLayout()
                 }
-                
-                Spacer()
-                
-                sunIndicator
+                .scrollPosition(id: $scrollPosition)
+                .scrollTargetBehavior(.paging)
+                .onChange(of: scrollPosition) { _, newPosition in
+                    // Update button highlight when user scrolls manually
+                    if let newPosition = newPosition {
+                        currentPage = newPosition
+                    }
+                }
+                .onChange(of: currentPage) { _, newPage in
+                    // Animate to page when button is tapped
+                    withAnimation(.smooth(duration: 0.3)) {
+                        scrollPosition = newPage
+                    }
+                }
             }
-            .padding(AppStyling.Spacing.md)
-            
-            if showChart {
-                chartView
-            } else {
-                SchematicView(viewModel: viewModel)
-            }
+            .background(AppStyling.Background.secondary)
         }
-        .background(AppStyling.Background.secondary)
     }
     
     private var controlPanel: some View {
@@ -79,7 +116,7 @@ struct DashboardView: View {
             .padding(AppStyling.Spacing.md)
         }
         .scrollIndicators(.hidden)
-        .background(AppStyling.Background.secondary)
+        .background(AppStyling.Background.tertiary)
     }
     
     private var timeDisplaySection: some View {
@@ -122,7 +159,7 @@ struct DashboardView: View {
                         .padding(AppStyling.Spacing.md)
                         .background(viewModel.isRunning ? AppStyling.Accent.warning : AppStyling.Accent.success)
                         .foregroundColor(AppStyling.Text.primary)
-                        .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.sm, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.xl, style: .continuous))
                 }
                 
                 Button(action: {
@@ -135,23 +172,27 @@ struct DashboardView: View {
                         .padding(AppStyling.Spacing.md)
                         .background(AppStyling.Temperature.cold)
                         .foregroundColor(AppStyling.Text.primary)
-                        .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.sm, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.xl, style: .continuous))
                 }
             }
-            
+
             VStack(alignment: .leading, spacing: AppStyling.Spacing.xs) {
                 Text("Speed: \(Int(viewModel.speedMultiplier))x")
                     .font(AppStyling.Typography.caption)
                     .foregroundColor(AppStyling.Text.secondary)
-                
-                Slider(value: Binding(
-                    get: { viewModel.speedMultiplier },
-                    set: { viewModel.setSpeed($0) }
-                ), in: 1...1000, step: 1)
-                    .tint(AppStyling.Accent.primary)
+
+                Slider(
+                    value: Binding(
+                        get: { viewModel.speedMultiplier },
+                        set: { viewModel.setSpeed($0) }
+                    ),
+                    in: 1...1000,
+                    step: 1
+                )
+                .tint(AppStyling.Accent.primary)
             }
         }
-        .padding(AppStyling.Spacing.md)
+        .padding(AppStyling.Spacing.lg)
         .cardStyle()
     }
     
@@ -195,7 +236,7 @@ struct DashboardView: View {
                      value: String(format: "%.1f °C", viewModel.tankAverageTemperature),
                      color: AppStyling.Temperature.color(for: viewModel.tankAverageTemperature))
         }
-        .padding(AppStyling.Spacing.md)
+        .padding(AppStyling.Spacing.lg)
         .cardStyle()
     }
     
@@ -248,7 +289,7 @@ struct DashboardView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(AppStyling.Spacing.md)
+        .padding(AppStyling.Spacing.lg)
         .cardStyle()
     }
     
@@ -265,7 +306,7 @@ struct DashboardView: View {
                 .monospacedDigit()
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(AppStyling.Spacing.md)
+        .padding(AppStyling.Spacing.lg)
         .cardStyle()
     }
     
@@ -286,155 +327,6 @@ struct DashboardView: View {
                 .font(AppStyling.Typography.value)
                 .foregroundColor(AppStyling.Text.primary)
                 .monospacedDigit()
-        }
-    }
-    
-    private var chartView: some View {
-        VStack(spacing: 0) {
-            Text("Temperature vs Time")
-                .font(AppStyling.Typography.title2)
-                .foregroundColor(AppStyling.Text.primary)
-                .padding(AppStyling.Spacing.md)
-            
-            if viewModel.temperatureData.isEmpty {
-                VStack {
-                    Spacer()
-                    Text("Start simulation to see data")
-                        .font(AppStyling.Typography.title)
-                        .foregroundColor(AppStyling.Text.secondary)
-                    Spacer()
-                }
-            } else {
-                Chart {
-                    ForEach(viewModel.temperatureData) { point in
-                        AreaMark(
-                            x: .value("Time", point.timeInHours),
-                            y: .value("Irradiance", point.solarIrradiance / 10.0)
-                        )
-                        .foregroundStyle(Color.white.opacity(0.2))
-                        .interpolationMethod(.linear)
-                    }
-                    
-                    ForEach(viewModel.temperatureData) { point in
-                        PointMark(
-                            x: .value("Time", point.timeInHours),
-                            y: .value("Temperature", point.ambientTemp)
-                        )
-                        .foregroundStyle(Color.gray)
-                        .symbolSize(80)
-                    }
-                    
-                    ForEach(viewModel.temperatureData) { point in
-                        PointMark(
-                            x: .value("Time", point.timeInHours),
-                            y: .value("Temperature", point.tankBottomTemp)
-                        )
-                        .foregroundStyle(AppStyling.Temperature.cold)
-                        .symbolSize(120)
-                    }
-                    
-                    ForEach(viewModel.temperatureData) { point in
-                        PointMark(
-                            x: .value("Time", point.timeInHours),
-                            y: .value("Temperature", point.tankTopTemp)
-                        )
-                        .foregroundStyle(AppStyling.Temperature.medium)
-                        .symbolSize(120)
-                    }
-                    
-                    ForEach(viewModel.temperatureData) { point in
-                        PointMark(
-                            x: .value("Time", point.timeInHours),
-                            y: .value("Temperature", point.collectorTemp)
-                        )
-                        .foregroundStyle(AppStyling.Temperature.hot)
-                        .symbolSize(120)
-                    }
-                }
-                .chartPlotStyle { plotArea in
-                    plotArea.background(AppStyling.Background.tertiary.opacity(0.3))
-                }
-                .chartXScale(domain: 0...24)
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: 2)) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                            .foregroundStyle(AppStyling.Text.tertiary.opacity(0.3))
-                        AxisValueLabel {
-                            if let hour = value.as(Int.self) {
-                                Text("\(hour):00")
-                                    .font(AppStyling.Typography.valueCaption)
-                                    .foregroundColor(AppStyling.Text.secondary)
-                            }
-                        }
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                            .foregroundStyle(AppStyling.Text.tertiary.opacity(0.3))
-                        AxisValueLabel {
-                            if let temp = value.as(Double.self) {
-                                Text("\(Int(temp))°C")
-                                    .font(AppStyling.Typography.valueCaption)
-                                    .foregroundColor(AppStyling.Text.secondary)
-                            }
-                        }
-                    }
-                }
-                .padding(AppStyling.Spacing.md)
-                
-                VStack(spacing: AppStyling.Spacing.sm) {
-                    Text("Temperature Legend")
-                        .font(AppStyling.Typography.headline)
-                        .foregroundColor(AppStyling.Text.primary)
-                    
-                    HStack(spacing: AppStyling.Spacing.xl) {
-                        chartLegendItem(
-                            color: AppStyling.Temperature.hot,
-                            label: "Collector",
-                            temp: viewModel.collectorTemperature
-                        )
-                        chartLegendItem(
-                            color: AppStyling.Temperature.medium,
-                            label: "Tank Top",
-                            temp: viewModel.tankTopTemperature
-                        )
-                        chartLegendItem(
-                            color: AppStyling.Temperature.cold,
-                            label: "Tank Bottom",
-                            temp: viewModel.tankBottomTemperature
-                        )
-                        chartLegendItem(
-                            color: Color.gray,
-                            label: "Ambient",
-                            temp: viewModel.ambientTemperature
-                        )
-                    }
-                }
-                .padding(AppStyling.Spacing.md)
-            }
-        }
-        .background(AppStyling.Background.primary)
-    }
-    
-    private func chartLegendItem(color: Color, label: String, temp: Double) -> some View {
-        VStack(alignment: .leading, spacing: AppStyling.Spacing.xs) {
-            HStack(spacing: AppStyling.Spacing.sm) {
-                Circle()
-                    .fill(color)
-                    .frame(width: 16, height: 16)
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(label)
-                        .font(AppStyling.Typography.subheadline)
-                        .foregroundColor(AppStyling.Text.primary)
-                    
-                    Text(String(format: "%.1f°C", temp))
-                        .font(AppStyling.Typography.valueCaption)
-                        .foregroundColor(AppStyling.Text.secondary)
-                        .monospacedDigit()
-                }
-            }
         }
     }
     

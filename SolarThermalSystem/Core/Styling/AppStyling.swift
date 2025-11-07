@@ -8,7 +8,7 @@ enum AppStyling {
         static let primary = Color(red: 0.05, green: 0.05, blue: 0.08)
         static let secondary = Color(red: 0.08, green: 0.08, blue: 0.12)
         static let tertiary = Color(red: 0.12, green: 0.12, blue: 0.16)
-        static let card = Color(red: 0.10, green: 0.10, blue: 0.14)
+        static let card = Color(red: 0.1, green: 0.1, blue: 0.14)
     }
     
     /// Temperature visualization colors transitioning from cold (blue) to hot (pink)
@@ -22,20 +22,31 @@ enum AppStyling {
         
         /// Maps temperature values to colors using interpolation between defined temperature ranges.
         /// Creates smooth color transitions for realistic thermal visualization.
-        static func color(for temperature: Double) -> Color {
+        /// - Parameters:
+        ///   - temperature: The temperature value in degrees Celsius
+        ///   - addWhite: Optional amount of white to mix in (0.0 to 1.0). Pass nil for no whiteness.
+        static func color(for temperature: Double, addWhite: Double? = 0.0) -> Color {
+            let baseColor: Color
             switch temperature {
             case ..<15:
-                return cold
+                baseColor = cold
             case 15..<25:
-                return interpolate(from: cold, to: cool, progress: (temperature - 15) / 10)
+                baseColor = interpolate(from: cold, to: cool, progress: (temperature - 15) / 10)
             case 25..<35:
-                return interpolate(from: cool, to: medium, progress: (temperature - 25) / 10)
+                baseColor = interpolate(from: cool, to: medium, progress: (temperature - 25) / 10)
             case 35..<45:
-                return interpolate(from: medium, to: warm, progress: (temperature - 35) / 10)
+                baseColor = interpolate(from: medium, to: warm, progress: (temperature - 35) / 10)
             case 45..<60:
-                return interpolate(from: warm, to: hot, progress: (temperature - 45) / 15)
+                baseColor = interpolate(from: warm, to: hot, progress: (temperature - 45) / 15)
             default:
-                return interpolate(from: hot, to: veryHot, progress: min((temperature - 60) / 20, 1.0))
+                baseColor = interpolate(from: hot, to: veryHot, progress: min((temperature - 60) / 20, 1.0))
+            }
+            
+            // Optionally add whiteness to lighten the color
+            if let whiteAmount = addWhite {
+                return addWhiteness(to: baseColor, amount: whiteAmount)
+            } else {
+                return baseColor
             }
         }
         
@@ -60,13 +71,21 @@ enum AppStyling {
             
             return Color(red: r, green: g, blue: b, opacity: a)
         }
+        
+        /// Adds whiteness to a color by interpolating with white
+        /// - Parameters:
+        ///   - color: The base color to lighten
+        ///   - amount: The amount of white to mix in (0.0 to 1.0, where 0.1 = 10% white)
+        private static func addWhiteness(to color: Color, amount: Double) -> Color {
+            return interpolate(from: color, to: .white, progress: amount)
+        }
     }
     
     enum Accent {
         static let primary = Color(red: 0.4, green: 0.6, blue: 1.0)
         static let secondary = Color(red: 0.8, green: 0.3, blue: 0.9)
         static let success = Color(red: 0.3, green: 0.8, blue: 0.5)
-        static let warning = Color(red: 0.0, green: 0.0, blue: 0.0)
+        static let warning = Background.primary
         static let danger = Color(red: 1.0, green: 0.3, blue: 0.3)
     }
     
@@ -115,6 +134,7 @@ enum AppStyling {
         static let lg: CGFloat = 24
         static let xl: CGFloat = 32
         static let xxl: CGFloat = 48
+        static let xxxl: CGFloat = 144
     }
     
     enum CornerRadius {
@@ -122,6 +142,7 @@ enum AppStyling {
         static let md: CGFloat = 12
         static let lg: CGFloat = 16
         static let xl: CGFloat = 24
+        static let xxl: CGFloat = 36
     }
 }
 
@@ -140,8 +161,7 @@ struct CardStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(AppStyling.Background.card)
-            .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.md, style: .continuous))
-            .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+            .clipShape(RoundedRectangle(cornerRadius: AppStyling.CornerRadius.xxl, style: .continuous))
     }
 }
 
