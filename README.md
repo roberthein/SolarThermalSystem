@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Platform](https://img.shields.io/badge/platform-iOS%2017.0%2B-blue)
+![Platform](https://img.shields.io/badge/platform-iOS%2018.0%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.9-orange)
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-✓-green)
 ![License](https://img.shields.io/badge/license-Educational-lightgrey)
@@ -49,7 +49,7 @@ This educational simulation demonstrates how solar thermal systems work by model
 - 🎨 Beautiful schematic visualization
 - 🔄 Automatic pump control with hysteresis
 - 🌡️ Multi-layer thermal stratification
-- ⏱️ Variable simulation speed (1x - 300x)
+- ⏱️ Variable simulation speed (1x - 1000x)
 
 ---
 
@@ -62,7 +62,7 @@ This educational simulation demonstrates how solar thermal systems work by model
 - **Thermal Stratification**: Multi-layer tank model (10 layers) preserving hot water at top, cold at bottom
 - **Automatic Pump Control**: Differential temperature controller with hysteresis to prevent rapid cycling
 - **Interactive Charts**: Live temperature graphs using SwiftUI Charts framework
-- **Variable Speed**: Adjust simulation speed from 1x to 300x real-time
+- **Variable Speed**: Adjust simulation speed from 1x to 1000x real-time
 - **Manual Control Mode**: Override automatic pump control for experimentation
 
 ### Visualization
@@ -96,10 +96,8 @@ This educational simulation demonstrates how solar thermal systems work by model
 
 ### Prerequisites
 
-- **macOS**: 13.0 (Ventura) or later
-- **Xcode**: 15.0 or later
-- **iOS SDK**: 17.0 or later
-- **Device**: iPad running iOS 17.0+ (or iPad Simulator)
+- **iOS SDK**: 18.0 or later
+- **Device**: iPhone or iPad running iOS 18.0+
 
 ### Installation
 
@@ -144,7 +142,7 @@ This educational simulation demonstrates how solar thermal systems work by model
 
 - **Start/Pause Button**: Toggle simulation running state
 - **Reset Button**: Return to initial conditions (6:00 AM, all temps at 20°C)
-- **Speed Slider**: Adjust simulation speed (1x - 300x)
+- **Speed Slider**: Adjust simulation speed (1x - 1000x)
 - **Automatic Control Toggle**: Switch between automatic and manual pump control
 - **Manual Pump Toggle**: Turn pump on/off manually (only when automatic control is disabled)
 
@@ -400,9 +398,8 @@ heatTransferCoefficient = 500 W/K (implicit in model)
 
 ### System Requirements
 
-- **iOS**: 17.0 or later
-- **iPadOS**: 17.0 or later
-- **Xcode**: 15.0 or later
+- **iOS**: 18.0 or later
+- **iPadOS**: 18.0 or later
 - **Swift**: 5.9 or later
 
 ---
@@ -456,16 +453,6 @@ The project uses Xcode's modern `PBXFileSystemSynchronizedRootGroup` format, whi
 ---
 
 ## 📚 Documentation
-
-This project includes comprehensive documentation:
-
-- **[QUICKSTART.md](QUICKSTART.md)**: Quick start guide and tutorial
-- **[ARCHITECTURE.md](ARCHITECTURE.md)**: Detailed architecture documentation
-- **[UI_DESIGN.md](UI_DESIGN.md)**: User interface design details
-- **[THERMODYNAMIC_EVALUATION.md](THERMODYNAMIC_EVALUATION.md)**: Physics model evaluation
-- **[TEMPERATURE_GRADIENT_ENHANCEMENT.md](TEMPERATURE_GRADIENT_ENHANCEMENT.md)**: Stratification improvements
-- **[STRATIFICATION_FIX.md](STRATIFICATION_FIX.md)**: Thermal stratification fixes
-- **[GRID_LAYOUT_REDESIGN.md](GRID_LAYOUT_REDESIGN.md)**: Layout redesign documentation
 
 ### Code Documentation
 
