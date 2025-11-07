@@ -8,24 +8,78 @@ struct DashboardView: View {
     @State private var currentPage: ViewPage = .schematic
     @State private var scrollPosition: ViewPage? = .schematic
     @State private var isFloatingPanelPresented = true
+    @State private var selectedDetent: PresentationDetent = .height(140)
+    @Environment(\.horizontalSizeClass) var horizontalSizeClass
+    @Environment(\.verticalSizeClass) var verticalSizeClass
     
     enum ViewPage: Int, Hashable {
         case schematic = 0
         case chart = 1
     }
+    
+    /// Determines if the control panel should be shown on the left side
+    /// - Returns: true for iPad (all orientations) and iPhone in landscape
+    private var shouldShowControlPanelOnLeft: Bool {
+        // iPad in any orientation
+        if horizontalSizeClass == .regular && verticalSizeClass == .regular {
+            return true
+        }
+        // iPhone in landscape (compact height)
+        if verticalSizeClass == .compact {
+            return true
+        }
+        return false
+    }
 
     var body: some View {
-        ZStack {
-            AppStyling.Background.primary
-                .ignoresSafeArea()
+        Group {
+            if shouldShowControlPanelOnLeft {
+                ZStack {
+                    AppStyling.Background.primary
+                        .ignoresSafeArea()
+                    // iPad or iPhone landscape: Side-by-side layout
+                    HStack(spacing: 0) {
+                        // Control panel on the left
+                        controlPanel
+                            .frame(width: 360)
+                        
+                        // Main visualization on the right
+                        mainVisualization
+                    }
+                }
+            } else {
+                // iPhone portrait: Floating panel layout
+                ZStack {
+                    AppStyling.Background.primary
+                        .ignoresSafeArea()
 
-            mainVisualization
-        }
-        .floatingPanel(minimumCornerRadius: 50, padding: 25, background: AnyShapeStyle(AppStyling.Background.tertiary), isPresented: $isFloatingPanelPresented, isPersistent: true) {
-            controlPanel
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .presentationDetents([.height(140), .fraction(0.6)])
-                .presentationBackgroundInteraction(.enabled)
+                    mainVisualization
+                }
+                .floatingPanel(minimumCornerRadius: 50, padding: 25, background: AnyShapeStyle(AppStyling.Background.tertiary), isPresented: $isFloatingPanelPresented, isPersistent: true) {
+                    controlPanel
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            // Expand panel when tapped while collapsed
+                            if selectedDetent == .height(140) {
+                                HapticsManager.selection()
+                                withAnimation(.smooth(duration: 0.3)) {
+                                    selectedDetent = .fraction(0.6)
+                                }
+                            }
+                        }
+                        .presentationDetents([.height(140), .fraction(0.6)], selection: $selectedDetent)
+                        .presentationDragIndicator(.visible)
+                        .presentationBackgroundInteraction(.enabled(upThrough: .height(140)))
+                        .interactiveDismissDisabled(true)
+                        .onChange(of: selectedDetent) { oldDetent, newDetent in
+                            // Haptic feedback when changing between sheet detents
+                            if oldDetent != newDetent {
+                                HapticsManager.light()
+                            }
+                        }
+                }
+            }
         }
         .preferredColorScheme(.dark)
         .ignoresSafeArea(.keyboard)
@@ -36,6 +90,7 @@ struct DashboardView: View {
             VStack(spacing: 0) {
                 HStack {
                     Button(action: {
+                        HapticsManager.selection()
                         withAnimation(.smooth(duration: 0.3)) {
                             currentPage = .schematic
                         }
@@ -50,6 +105,7 @@ struct DashboardView: View {
                     }
                     
                     Button(action: {
+                        HapticsManager.selection()
                         withAnimation(.smooth(duration: 0.3)) {
                             currentPage = .chart
                         }
@@ -88,7 +144,8 @@ struct DashboardView: View {
                 .scrollTargetBehavior(.paging)
                 .onChange(of: scrollPosition) { _, newPosition in
                     // Update button highlight when user scrolls manually
-                    if let newPosition = newPosition {
+                    if let newPosition = newPosition, currentPage != newPosition {
+                        HapticsManager.light()
                         currentPage = newPosition
                     }
                 }
@@ -146,8 +203,10 @@ struct DashboardView: View {
             HStack(spacing: AppStyling.Spacing.md) {
                 Button(action: {
                     if viewModel.isRunning {
+                        HapticsManager.medium()
                         viewModel.pauseSimulation()
                     } else {
+                        HapticsManager.success()
                         viewModel.startSimulation()
                     }
                 }) {
@@ -163,6 +222,7 @@ struct DashboardView: View {
                 }
                 
                 Button(action: {
+                    HapticsManager.heavy()
                     viewModel.resetSimulation()
                 }) {
                     Label("Reset", systemImage: "arrow.counterclockwise")
@@ -184,7 +244,19 @@ struct DashboardView: View {
                 Slider(
                     value: Binding(
                         get: { viewModel.speedMultiplier },
-                        set: { viewModel.setSpeed($0) }
+                        set: { newSpeed in
+                            let oldSpeed = viewModel.speedMultiplier
+                            viewModel.setSpeed(newSpeed)
+                            
+                            // Haptic feedback at significant speed milestones
+                            let milestones: [Double] = [1, 10, 50, 100, 250, 500, 750, 1000]
+                            for milestone in milestones {
+                                if (oldSpeed < milestone && newSpeed >= milestone) || (oldSpeed >= milestone && newSpeed < milestone) {
+                                    HapticsManager.light()
+                                    break
+                                }
+                            }
+                        }
                     ),
                     in: 1...1000,
                     step: 1
@@ -256,7 +328,10 @@ struct DashboardView: View {
             
             Toggle(isOn: Binding(
                 get: { viewModel.pumpAutomaticControl },
-                set: { _ in viewModel.togglePumpControlMode() }
+                set: { _ in 
+                    HapticsManager.selection()
+                    viewModel.togglePumpControlMode()
+                }
             )) {
                 HStack(spacing: AppStyling.Spacing.sm) {
                     Image(systemName: "gearshape.2")
@@ -270,6 +345,7 @@ struct DashboardView: View {
             
             if !viewModel.pumpAutomaticControl {
                 Button(action: {
+                    HapticsManager.medium()
                     viewModel.togglePump()
                 }) {
                     Label(viewModel.pumpIsOn ? "Turn OFF" : "Turn ON",

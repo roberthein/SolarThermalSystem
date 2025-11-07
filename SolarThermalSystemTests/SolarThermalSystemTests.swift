@@ -13,7 +13,7 @@ struct SolarThermalSystemTests {
     // MARK: - Environment Tests
     
     @Test func testEnvironmentSolarCycle() {
-        let environment = Environment()
+        let environment = EnvironmentalConditions()
         
         // Test nighttime (no sun)
         #expect(environment.irradiance(at: 0.0) == 0.0, "Midnight should have no irradiance")
@@ -41,7 +41,7 @@ struct SolarThermalSystemTests {
     }
     
     @Test func testEnvironmentAmbientTemperature() {
-        let environment = Environment()
+        let environment = EnvironmentalConditions()
         
         // Test temperature bounds
         let morningTemp = environment.ambientTemp(at: 3.0) // Coldest

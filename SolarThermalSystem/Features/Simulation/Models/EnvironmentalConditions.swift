@@ -2,7 +2,7 @@ import Foundation
 
 /// Models environmental conditions over a 24-hour cycle including solar irradiance and ambient temperature.
 /// Uses sinusoidal functions to simulate realistic daily patterns.
-struct Environment {
+struct EnvironmentalConditions {
     let maxIrradiance: Double = 1000.0
     let sunriseHour: Double = 6.0
     let sunsetHour: Double = 18.0

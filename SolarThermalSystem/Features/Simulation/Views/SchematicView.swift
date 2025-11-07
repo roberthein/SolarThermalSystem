@@ -246,6 +246,14 @@ struct SchematicView: View {
                     Text("Storage Tank - \(300)L")
                         .font(AppStyling.Typography.headline)
                         .foregroundColor(AppStyling.Text.primary)
+                    HStack(spacing: AppStyling.Spacing.xs) {
+                        Text("Heat Loss")
+                            .font(AppStyling.Typography.caption)
+                            .foregroundColor(AppStyling.Text.tertiary)
+                        Text("4.0 W/K")
+                            .font(AppStyling.Typography.value)
+                            .foregroundColor(AppStyling.Text.secondary)
+                    }
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)

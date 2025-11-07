@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import UIKit
 
 /// Orchestrates the solar thermal system simulation and exposes state to SwiftUI views.
 /// Updates simulation at 10 Hz with configurable speed multiplier for time acceleration.
@@ -20,13 +21,14 @@ class SimulationViewModel: ObservableObject {
     @Published var energyCollected: Double = 0.0
     @Published var speedMultiplier: Double = 60.0
     
-    private let environment = Environment()
+    private let environment = EnvironmentalConditions()
     private let collector = SolarCollector()
     private let tank = ThermalStorageTank()
     private let pump = Pump()
     private let updateInterval: TimeInterval = 0.1
     private var timer: Timer?
     private var cumulativeEnergyJoules: Double = 0.0
+    private var previousPumpState: Bool = false
     
     init() {
         tankLayerTemperatures = tank.allLayerTemperatures
@@ -85,11 +87,19 @@ class SimulationViewModel: ObservableObject {
         let ambientTemp = environment.ambientTemp(at: currentTimeInHours)
         
         if pump.automaticControl {
+            let previousState = pump.isOn
             pump.updateAutomaticControl(
                 collectorTemp: collector.temperature,
                 tankBottomTemp: tank.bottomTemperature,
                 dt: simulatedTimeElapsed
             )
+            
+            // Trigger haptic feedback when pump state changes automatically
+            if previousState != pump.isOn {
+                DispatchQueue.main.async {
+                    HapticsManager.light()
+                }
+            }
         }
         
         let heatToTank = collector.update(
